@@ -145,5 +145,9 @@ blocks:
             - cd 3-terraform-dynamodb
             - artifact pull workflow .terraform
             - artifact pull workflow .terraform.lock.hcl
+            - artifact pull workflow dynamodb.tfstate --force || true
+            - mv dynamodb.tfstate terraform.tfstate || true
             - chmod -R +x .terraform
             - terraform apply -auto-approve
+            - cp terraform.tfstate dynamodb.tfstate
+            - artifact push workflow dynamodb.tfstate --force
