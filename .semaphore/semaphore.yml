@@ -17,6 +17,8 @@ blocks:
             - terraform init
             - artifact push workflow .terraform
             - artifact push workflow .terraform.lock.hcl
+            - artifact pull workflow terraform.tfstate --force
+            - '''find .terraform -type f -name ''''terraform-provider-*'''' -exec chmod +x {} \;'''
   - name: Deploy
     task:
       secrets:
