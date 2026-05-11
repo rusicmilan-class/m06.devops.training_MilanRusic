@@ -33,3 +33,17 @@ blocks:
             - terraform plan
             - terraform apply -auto-approve
             - artifact push workflow terraform.tfstate
+  - name: Use bucket
+    task:
+      secrets:
+        - name: localstack
+      jobs:
+        - name: 'AWS S3 copy, list, remove'
+          commands:
+            - checkout
+            - cd 1-terraform-apply
+            - 'BUCKET_NAME=$(awk ''/variable "bucket_name"/{in_block=1;next} in_block && /default/{gsub(/.*"/,"",$0); gsub(/".*/,"",$0); print; exit} in_block && /^}/{in_block=0}'' variables.tf)'
+            - 'ENDPOINT_URL="${TF_VAR_aws_endpoint:-http://devops.tomfern.com:31566}"'
+            - 'aws s3 cp README.md "s3://${BUCKET_NAME}/" --endpoint-url "${ENDPOINT_URL}"'
+            - 'aws s3 ls "s3://${BUCKET_NAME}" --endpoint-url "${ENDPOINT_URL}"'
+            - 'aws s3 rm "s3://${BUCKET_NAME}/README.md" --endpoint-url "${ENDPOINT_URL}"'
