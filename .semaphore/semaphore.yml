@@ -48,3 +48,14 @@ blocks:
             - 'aws s3 cp README.md "s3://${BUCKET_NAME}/" --endpoint-url "${ENDPOINT_URL}"'
             - 'aws s3 ls "s3://${BUCKET_NAME}" --endpoint-url "${ENDPOINT_URL}"'
             - 'aws s3 rm "s3://${BUCKET_NAME}/README.md" --endpoint-url "${ENDPOINT_URL}"'
+  - name: Destroy
+    task:
+      jobs:
+        - name: Terraform destroy
+          commands:
+            - checkout
+            - cd 1-terraform-apply
+            - artifact pull workflow .terraform
+            - artifact pull workflow .terraform.lock.hcl
+            - artifact pull workflow terraform.tfstate
+            - terraform destroy -auto-approve
