@@ -42,9 +42,9 @@ blocks:
           commands:
             - checkout
             - cd 1-terraform-apply
-            - '''BUCKET_NAME="${TF_VAR_bucket_name:-$(sed -n ''''/variable "bucket_name"/,/^[[:space:]]*}/{s/.*default[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p}'''' variables.tf | head -n1)}"'''
-            - '''[ -n "${BUCKET_NAME}" ] || { echo "BUCKET_NAME is empty. Set TF_VAR_bucket_name or variables.tf default."; exit 1; }'''
-            - '''ENDPOINT_URL="${TF_VAR_aws_endpoint:-http://devops.tomfern.com:31566}"'''
-            - '''aws s3 cp README.md "s3://${BUCKET_NAME}/" --endpoint-url "${ENDPOINT_URL}"'''
-            - '''aws s3 ls "s3://${BUCKET_NAME}" --endpoint-url "${ENDPOINT_URL}"'''
-            - '''aws s3 rm "s3://${BUCKET_NAME}/README.md" --endpoint-url "${ENDPOINT_URL}"'''
+            - 'BUCKET_NAME="${TF_VAR_bucket_name:-group1-milan}"'
+            - '[ -n "${BUCKET_NAME}" ] || { echo "BUCKET_NAME is empty"; exit 1; }'
+            - 'ENDPOINT_URL="${TF_VAR_aws_endpoint:-http://devops.tomfern.com:31566}"'
+            - 'aws s3 cp README.md "s3://${BUCKET_NAME}/" --endpoint-url "${ENDPOINT_URL}"'
+            - 'aws s3 ls "s3://${BUCKET_NAME}" --endpoint-url "${ENDPOINT_URL}"'
+            - 'aws s3 rm "s3://${BUCKET_NAME}/README.md" --endpoint-url "${ENDPOINT_URL}"'
