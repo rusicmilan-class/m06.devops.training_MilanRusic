@@ -18,8 +18,6 @@ blocks:
             - artifact push workflow .terraform
             - artifact push workflow .terraform.lock.hcl
   - name: Deploy
-    dependencies:
-      - Init
     task:
       secrets:
         - name: localstack
@@ -34,4 +32,3 @@ blocks:
             - terraform plan
             - terraform apply -auto-approve
             - artifact push workflow terraform.tfstate
-            - echo "Done"
