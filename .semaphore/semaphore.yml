@@ -4,150 +4,153 @@ agent:
   machine:
     type: f1-standard-4
     os_image: ubuntu2404
+fail_fast:
+  stop:
+    when: branch != 'main'
+auto_cancel:
+  running:
+    when: branch != 'main'
+  queued:
+    when: branch = 'main'
+global_job_config:
+  prologue:
+    commands:
+      - checkout
 blocks:
   - name: Init
+    dependencies: []
     task:
       secrets:
         - name: localstack
       jobs:
-        - name: Terraform init
+        - name: Run terraform init
           commands:
-            - checkout
             - cd 1-terraform-apply
             - terraform init
             - artifact push workflow .terraform
             - artifact push workflow .terraform.lock.hcl
-    dependencies: []
   - name: Deploy
+    dependencies:
+      - Init
     task:
       secrets:
         - name: localstack
       jobs:
-        - name: 'Validate, plan, apply'
+        - name: Deploy S3 bucket
           commands:
-            - checkout
             - cd 1-terraform-apply
             - artifact pull workflow .terraform
             - artifact pull workflow .terraform.lock.hcl
-            - 'find .terraform -type f -name ''terraform-provider-*'' -exec chmod +x {} \;'
+            - chmod +x .terraform/providers/registry.terraform.io/hashicorp/aws/3.76.1/linux_amd64/terraform-provider-aws_v3.76.1_x5
             - terraform validate
-            - terraform plan
             - terraform apply -auto-approve
             - artifact push workflow terraform.tfstate
-    dependencies:
-      - Init
   - name: Use bucket
-    task:
-      secrets:
-        - name: localstack
-      jobs:
-        - name: 'AWS S3 copy, list, remove'
-          commands:
-            - checkout
-            - cd 1-terraform-apply
-            - 'BUCKET_NAME="${TF_VAR_bucket_name:-group1-milan}"'
-            - '[ -n "${BUCKET_NAME}" ] || { echo "BUCKET_NAME is empty"; exit 1; }'
-            - 'ENDPOINT_URL="${TF_VAR_aws_endpoint:-http://devops.tomfern.com:31566}"'
-            - 'aws s3 cp README.md "s3://${BUCKET_NAME}/" --endpoint-url "${ENDPOINT_URL}"'
-            - 'aws s3 ls "s3://${BUCKET_NAME}" --endpoint-url "${ENDPOINT_URL}"'
-            - 'aws s3 rm "s3://${BUCKET_NAME}/README.md" --endpoint-url "${ENDPOINT_URL}"'
     dependencies:
       - Deploy
-  - name: Destroy
     task:
       secrets:
         - name: localstack
       jobs:
-        - name: Terraform destroy
+        - name: Run AWS
           commands:
-            - checkout
+            - cd 1-terraform-apply
+            - 'aws s3 cp README.md s3://group1-milan/'
+            - 'aws s3 ls s3://group1-milan'
+            - 'aws s3 rm s3://group1-milan/README.md'
+  - name: Destroy
+    dependencies:
+      - Use bucket
+    task:
+      secrets:
+        - name: localstack
+      jobs:
+        - name: Destroy the artifact
+          commands:
             - cd 1-terraform-apply
             - artifact pull workflow .terraform
             - artifact pull workflow .terraform.lock.hcl
             - artifact pull workflow terraform.tfstate --force
-            - 'find .terraform -type f -name ''terraform-provider-*'' -exec chmod +x {} \;'
+            - chmod +x .terraform/providers/registry.terraform.io/hashicorp/aws/3.76.1/linux_amd64/terraform-provider-aws_v3.76.1_x5
             - terraform destroy -auto-approve
-    dependencies:
-      - Use bucket
-  - name: EC2 Init
+  - name: EC2 Deploy
     dependencies:
       - Init
     task:
       secrets:
         - name: localstack
       jobs:
-        - name: EC2 Terraform init
+        - name: Deploy EC2
           commands:
-            - checkout
-            - cd 2-terraform-ec2
-            - terraform init
-            - artifact push workflow .terraform --force
-            - artifact push workflow .terraform.lock.hcl --force
-  - name: EC2 Deploy
-    dependencies:
-      - EC2 Init
-    task:
-      secrets:
-        - name: localstack
-      jobs:
-        - name: 'EC2 validate, plan, apply'
-          commands:
-            - checkout
             - cd 2-terraform-ec2
             - artifact pull workflow .terraform
             - artifact pull workflow .terraform.lock.hcl
-            - 'find .terraform -type f -name ''terraform-provider-*'' -exec chmod +x {} \;'
+            - chmod +x .terraform/providers/registry.terraform.io/hashicorp/aws/3.76.1/linux_amd64/terraform-provider-aws_v3.76.1_x5
             - terraform validate
-            - terraform plan
             - terraform apply -auto-approve
-            - artifact push workflow terraform.tfstate --force
+            - cp terraform.tfstate terraform.tfstate_
+            - artifact push workflow terraform.tfstate_
   - name: EC2 Destroy
     dependencies:
       - EC2 Deploy
-      - Init
     task:
       secrets:
         - name: localstack
       jobs:
-        - name: EC2 Terraform destroy
+        - name: Delete all
           commands:
-            - checkout
             - cd 2-terraform-ec2
             - artifact pull workflow .terraform
             - artifact pull workflow .terraform.lock.hcl
-            - artifact pull workflow terraform.tfstate --force
-            - 'find .terraform -type f -name ''terraform-provider-*'' -exec chmod +x {} \;'
+            - artifact pull workflow terraform.tfstate_ --force
+            - chmod +x .terraform/providers/registry.terraform.io/hashicorp/aws/3.76.1/linux_amd64/terraform-provider-aws_v3.76.1_x5
+            - mv terraform.tfstate_ terraform.tfstate
             - terraform destroy -auto-approve
-  - name: DynamoDB Init
+  - name: DynamoDB Deploy
     dependencies:
       - Init
     task:
       secrets:
         - name: localstack
       jobs:
-        - name: DynamoDB Terraform init
+        - name: Deploy DynamoDB
           commands:
-            - checkout
             - cd 3-terraform-dynamodb
-            - terraform init
-            - artifact push workflow .terraform --force
-            - artifact push workflow .terraform.lock.hcl --force
-  - name: DynamoDB Deploy
+            - artifact pull workflow .terraform
+            - artifact pull workflow .terraform.lock.hcl
+            - chmod +x .terraform/providers/registry.terraform.io/hashicorp/aws/3.76.1/linux_amd64/terraform-provider-aws_v3.76.1_x5
+            - aws dynamodb delete-table --table-name group1-milan-table || true
+            - terraform validate
+            - terraform apply -auto-approve
+            - cp terraform.tfstate terraform.tfstate_3
+            - artifact push workflow terraform.tfstate_3
+  - name: DynamoDB Interact
     dependencies:
-      - DynamoDB Init
+      - DynamoDB Deploy
     task:
       secrets:
         - name: localstack
       jobs:
-        - name: DynamoDB validate and apply
+        - name: Interact with the table
           commands:
-            - checkout
+            - cd 3-terraform-dynamodb
+            - aws dynamodb list-tables
+            - aws dynamodb describe-table --table-name group1-milan-table
+            - 'aws dynamodb put-item --table-name group1-milan-table --item ''{ "user_id": {"S": "u1"}, "name": {"S": "Alice"}, "email": {"S": "alice@example.com"} }'''
+            - aws dynamodb scan --table-name group1-milan-table
+  - name: DynamoDB Destroy
+    dependencies:
+      - DynamoDB Interact
+    task:
+      secrets:
+        - name: localstack
+      jobs:
+        - name: Destroy the 03
+          commands:
             - cd 3-terraform-dynamodb
             - artifact pull workflow .terraform
             - artifact pull workflow .terraform.lock.hcl
-            - artifact pull workflow dynamodb.tfstate --force || true
-            - mv dynamodb.tfstate terraform.tfstate || true
-            - chmod -R +x .terraform
-            - terraform apply -auto-approve
-            - cp terraform.tfstate dynamodb.tfstate
-            - artifact push workflow dynamodb.tfstate --force
+            - artifact pull workflow terraform.tfstate_3 --force
+            - chmod +x .terraform/providers/registry.terraform.io/hashicorp/aws/3.76.1/linux_amd64/terraform-provider-aws_v3.76.1_x5
+            - mv terraform.tfstate_3 terraform.tfstate
+            - terraform destroy -auto-approve
