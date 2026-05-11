@@ -118,17 +118,34 @@ blocks:
             - artifact pull workflow terraform.tfstate --force
             - 'find .terraform -type f -name ''terraform-provider-*'' -exec chmod +x {} \;'
             - terraform destroy -auto-approve
-  - name: DynamoDB Terraform init
+  - name: DynamoDB Init
     dependencies:
       - Init
     task:
       secrets:
         - name: localstack
       jobs:
-        - name: 'Job #1'
+        - name: DynamoDB Terraform init
           commands:
             - checkout
             - cd 3-terraform-dynamodb
             - terraform init
             - artifact push workflow .terraform --force
             - artifact push workflow .terraform.lock.hcl --force
+  - name: DynamoDB Deploy
+    dependencies:
+      - DynamoDB Init
+    task:
+      secrets:
+        - name: localstack
+      jobs:
+        - name: DynamoDB validate and apply
+          commands:
+            - checkout
+            - cd 3-terraform-dynamodb
+            - artifact pull workflow .terraform
+            - artifact pull workflow .terraform.lock.hcl
+            - '''find .terraform -type f -name ''''terraform-provider-*'''' -exec chmod +x {} \;'''
+            - terraform validate
+            - terraform apply -auto-approve
+            - artifact push workflow terraform.tfstate --force
