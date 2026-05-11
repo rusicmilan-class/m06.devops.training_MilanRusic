@@ -145,7 +145,6 @@ blocks:
             - cd 3-terraform-dynamodb
             - artifact pull workflow .terraform
             - artifact pull workflow .terraform.lock.hcl
-            - '''find .terraform -type f -name ''''terraform-provider-*'''' -exec chmod +x {} \;'''
-            - terraform validate
+            - chmod -R +x .terraform
             - terraform apply -auto-approve
             - artifact push workflow terraform.tfstate --force
