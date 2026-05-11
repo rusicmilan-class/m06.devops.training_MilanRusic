@@ -100,4 +100,4 @@ blocks:
             - terraform validate
             - terraform plan
             - terraform apply -auto-approve
-            - artifact push workflow terraform.tfstate
+            - artifact push workflow terraform.tfstate --force
