@@ -81,5 +81,5 @@ blocks:
             - checkout
             - cd 2-terraform-ec2
             - terraform init
-            - artifact push workflow ec2.terraform
-            - artifact push workflow ec2.terraform.lock.hcl
+            - artifact push workflow terraform
+            - artifact push workflow terraform.lock.hcl
