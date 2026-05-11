@@ -35,6 +35,11 @@ variable "machine_size" {
 variable "machine_name" {
   description = "Name of the VM"
   type        = string
-  default     = "my-example-machine"
+  default     = "group1-vm"
+
+  validation {
+    condition     = can(regex("^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$", var.machine_name))
+    error_message = "machine_name must be 2-63 chars, lowercase letters/numbers/hyphens, start/end with letter or number."
+  }
 }
 
