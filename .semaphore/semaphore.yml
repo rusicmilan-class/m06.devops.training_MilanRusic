@@ -49,8 +49,6 @@ blocks:
             - 'aws s3 ls "s3://${BUCKET_NAME}" --endpoint-url "${ENDPOINT_URL}"'
             - 'aws s3 rm "s3://${BUCKET_NAME}/README.md" --endpoint-url "${ENDPOINT_URL}"'
   - name: Destroy
-    dependencies:
-      - Use bucket
     task:
       secrets:
         - name: localstack
