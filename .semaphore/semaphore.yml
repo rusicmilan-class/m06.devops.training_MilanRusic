@@ -28,6 +28,7 @@ blocks:
             - cd 1-terraform-apply
             - artifact pull workflow .terraform
             - artifact pull workflow .terraform.lock.hcl
+            - 'find .terraform -type f -name ''terraform-provider-*'' -exec chmod +x {} \;'
             - terraform validate
             - terraform plan
             - terraform apply -auto-approve
