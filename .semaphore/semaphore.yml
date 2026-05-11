@@ -147,4 +147,3 @@ blocks:
             - artifact pull workflow .terraform.lock.hcl
             - chmod -R +x .terraform
             - terraform apply -auto-approve
-            - artifact push workflow terraform.tfstate --force
