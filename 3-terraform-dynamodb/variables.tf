@@ -23,5 +23,5 @@ variable "aws_endpoint" {
 variable "table_name" {
   description = "The name of the DynamoDB table"
   type        = string
-  default     = "devops-training-table"
+  default     = "group1-milan-table"
 }
