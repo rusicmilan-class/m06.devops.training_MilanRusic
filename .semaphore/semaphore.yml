@@ -17,6 +17,7 @@ blocks:
             - terraform init
             - artifact push workflow .terraform
             - artifact push workflow .terraform.lock.hcl
+    dependencies: []
   - name: Deploy
     task:
       secrets:
@@ -33,6 +34,8 @@ blocks:
             - terraform plan
             - terraform apply -auto-approve
             - artifact push workflow terraform.tfstate
+    dependencies:
+      - Init
   - name: Use bucket
     task:
       secrets:
@@ -48,6 +51,8 @@ blocks:
             - 'aws s3 cp README.md "s3://${BUCKET_NAME}/" --endpoint-url "${ENDPOINT_URL}"'
             - 'aws s3 ls "s3://${BUCKET_NAME}" --endpoint-url "${ENDPOINT_URL}"'
             - 'aws s3 rm "s3://${BUCKET_NAME}/README.md" --endpoint-url "${ENDPOINT_URL}"'
+    dependencies:
+      - Deploy
   - name: Destroy
     task:
       secrets:
@@ -62,3 +67,19 @@ blocks:
             - artifact pull workflow terraform.tfstate --force
             - 'find .terraform -type f -name ''terraform-provider-*'' -exec chmod +x {} \;'
             - terraform destroy -auto-approve
+    dependencies:
+      - Use bucket
+  - name: EC2 Init
+    dependencies:
+      - Init
+    task:
+      secrets:
+        - name: localstack
+      jobs:
+        - name: EC2 Terraform init
+          commands:
+            - checkout
+            - cd 2-terraform-ec2
+            - terraform init
+            - artifact push workflow ec2.terraform
+            - artifact push workflow ec2.terraform.lock.hcl
