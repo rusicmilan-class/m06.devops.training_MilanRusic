@@ -101,3 +101,20 @@ blocks:
             - terraform plan
             - terraform apply -auto-approve
             - artifact push workflow terraform.tfstate --force
+  - name: EC2 Destroy
+    dependencies:
+      - EC2 Deploy
+      - Init
+    task:
+      secrets:
+        - name: localstack
+      jobs:
+        - name: EC2 Terraform destroy
+          commands:
+            - checkout
+            - cd 2-terraform-ec2
+            - artifact pull workflow .terraform
+            - artifact pull workflow .terraform.lock.hcl
+            - artifact pull workflow terraform.tfstate --force
+            - 'find .terraform -type f -name ''terraform-provider-*'' -exec chmod +x {} \;'
+            - terraform destroy -auto-approve
