@@ -34,3 +34,4 @@ blocks:
             - terraform plan
             - terraform apply -auto-approve
             - artifact push workflow terraform.tfstate
+            - echo "Done"
