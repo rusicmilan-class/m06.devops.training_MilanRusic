@@ -83,3 +83,21 @@ blocks:
             - terraform init
             - artifact push workflow .terraform --force
             - artifact push workflow .terraform.lock.hcl --force
+  - name: EC2 Deploy
+    dependencies:
+      - EC2 Init
+    task:
+      secrets:
+        - name: localstack
+      jobs:
+        - name: 'EC2 validate, plan, apply'
+          commands:
+            - checkout
+            - cd 2-terraform-ec2
+            - artifact pull workflow .terraform
+            - artifact pull workflow .terraform.lock.hcl
+            - 'find .terraform -type f -name ''terraform-provider-*'' -exec chmod +x {} \;'
+            - terraform validate
+            - terraform plan
+            - terraform apply -auto-approve
+            - artifact push workflow terraform.tfstate
