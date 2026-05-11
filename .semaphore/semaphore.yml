@@ -60,5 +60,5 @@ blocks:
             - artifact pull workflow .terraform
             - artifact pull workflow .terraform.lock.hcl
             - artifact pull workflow terraform.tfstate --force
-            - '''find .terraform -type f -name ''''terraform-provider-*'''' -exec chmod +x {} \;'''
+            - 'find .terraform -type f -name ''terraform-provider-*'' -exec chmod +x {} \;'
             - terraform destroy -auto-approve
